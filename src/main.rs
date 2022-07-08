@@ -20,6 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     paths.sort();
 
+    println!("colors\tmicroseconds\tname\tpath");
     for path in paths {
         for i in 0..4 {
             let graph = VecVecGraph::from_dimacs_file(&path);
@@ -38,7 +39,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 count_colors(&coloring),
                 elapsed.as_micros(),
                 name,
-                path.display()
+                path.file_name().unwrap().to_str().unwrap(),
             );
             validate_coloring(&graph, &coloring);
         }
