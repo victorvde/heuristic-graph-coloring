@@ -22,8 +22,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("colors\tmicroseconds\tname\tpath");
     for path in paths {
+        let graph = match VecVecGraph::from_dimacs_file(&path) {
+            Ok(x) => x,
+            Err(e) => {
+                eprintln!("Error loading {:?}: {}, Skipping.", path, e);
+                continue;
+            }
+        };
         for i in 0..4 {
-            let graph = VecVecGraph::from_dimacs_file(&path);
             use std::time::Instant;
             let now = Instant::now();
             let (name, coloring) = match i {

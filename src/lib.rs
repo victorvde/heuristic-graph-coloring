@@ -15,13 +15,12 @@ pub trait ColorableGraph {
 }
 
 pub struct VecVecGraph {
-    num_vertices: usize,
-    edges: Vec<Vec<usize>>,
+    pub edges: Vec<Vec<usize>>,
 }
 
 impl ColorableGraph for &VecVecGraph {
     fn num_vertices(&self) -> usize {
-        self.num_vertices
+        self.edges.len()
     }
 
     fn neighbors(&self, vi: usize) -> &[usize] {
@@ -30,52 +29,58 @@ impl ColorableGraph for &VecVecGraph {
 }
 
 impl VecVecGraph {
-    pub fn from_dimacs_file(path: &dyn AsRef<std::path::Path>) -> VecVecGraph {
+    pub fn new(num_vertices: usize) -> Self {
+        VecVecGraph {
+            edges: (0..num_vertices).map(|_| vec![]).collect(),
+        }
+    }
+
+    pub fn add_edge(&mut self, w: usize, v: usize) {
+        self.edges[w].push(v);
+        self.edges[v].push(w);
+    }
+
+    pub fn from_dimacs_file(path: &dyn AsRef<std::path::Path>) -> Result<Self, Box<dyn std::error::Error>> {
         use std::io::BufRead;
 
-        let f = std::fs::File::open(path).unwrap();
+        let f = std::fs::File::open(path)?;
         let r = std::io::BufReader::new(f);
         let mut graph = None;
-        for line in r.lines() {
-            let line = line.unwrap();
-            let first = match line.chars().next() {
-                None => continue,
-                Some(c) => c,
-            };
-            match first {
-                'c' | 'n' | 'x' | 'd' | 'v' => continue,
-                'p' => {
-                    let mut it = line.split(' ');
-                    _ = it.next();
-                    let format = it.next().unwrap();
-                    assert!(format == "edge");
-                    let num_vertices = it.next().unwrap().parse::<usize>().unwrap();
-                    let _num_edges = it.next().unwrap().parse::<usize>().unwrap();
-                    assert!(it.next().is_none());
-                    graph = Some(VecVecGraph {
-                        num_vertices,
-                        edges: (0..num_vertices).map(|_| vec![]).collect(),
-                    });
-                }
-                'e' => {
-                    let mut it = line.split(' ');
-                    _ = it.next();
-                    let w = it.next().unwrap().parse::<usize>().unwrap() - 1;
-                    let v = it.next().unwrap().parse::<usize>().unwrap() - 1;
-                    if w == v {
-                        continue;
+        let rgraph = &mut graph;
+        for (i, line) in r.lines().enumerate() {
+            let line = line?;
+            (|| {
+                let mut it = line.split(' ');
+                match it.next() {
+                    Some("c" | "n" | "x" | "d" | "v") | None => {},
+                    Some("p") => {
+                        let format = it.next()?;
+                        if format != "edge" { return None }
+                        let num_vertices = it.next()?.parse::<usize>().ok()?;
+                        let _num_edges = it.next()?.parse::<usize>().ok()?;
+                        if !it.next().is_none() { return None; }
+                        if ! rgraph.is_none() { return None }
+                        *rgraph = Some(Self::new(num_vertices));
                     }
-                    graph.as_mut().unwrap().edges[w].push(v);
-                    graph.as_mut().unwrap().edges[v].push(w);
+                    Some("e") => {
+                        let w = it.next()?.parse::<usize>().ok()? - 1;
+                        let v = it.next()?.parse::<usize>().ok()? - 1;
+                        let max = rgraph.as_ref()?.num_vertices();
+                        if w >= max || v >= max { return None; }
+                        if w != v {
+                           rgraph.as_mut()?.add_edge(w, v);
+                        }
+                    }
+                    _ => { return None },
                 }
-                _ => panic!("unrecognized line starting with {first}"),
-            }
+                Some(())
+            })().ok_or(format!("invalid line {}: {}", i+1, line))?;
         }
-        graph.unwrap()
+        Ok(graph.ok_or("no graph defined in file")?)
     }
 }
 
-pub fn color_greedy_by_order(
+fn color_greedy_by_order(
     graph: impl ColorableGraph,
     order: impl Iterator<Item = usize>,
 ) -> Vec<usize> {
