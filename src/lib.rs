@@ -40,7 +40,9 @@ impl VecVecGraph {
         self.edges[v].push(w);
     }
 
-    pub fn from_dimacs_file(path: &dyn AsRef<std::path::Path>) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_dimacs_file(
+        path: &dyn AsRef<std::path::Path>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         use std::io::BufRead;
 
         let f = std::fs::File::open(path)?;
@@ -52,29 +54,38 @@ impl VecVecGraph {
             (|| {
                 let mut it = line.split(' ');
                 match it.next() {
-                    Some("c" | "n" | "x" | "d" | "v") | None => {},
+                    Some("c" | "n" | "x" | "d" | "v") | None => {}
                     Some("p") => {
                         let format = it.next()?;
-                        if format != "edge" { return None }
+                        if format != "edge" {
+                            return None;
+                        }
                         let num_vertices = it.next()?.parse::<usize>().ok()?;
                         let _num_edges = it.next()?.parse::<usize>().ok()?;
-                        if !it.next().is_none() { return None; }
-                        if ! rgraph.is_none() { return None }
+                        if !it.next().is_none() {
+                            return None;
+                        }
+                        if !rgraph.is_none() {
+                            return None;
+                        }
                         *rgraph = Some(Self::new(num_vertices));
                     }
                     Some("e") => {
                         let w = it.next()?.parse::<usize>().ok()? - 1;
                         let v = it.next()?.parse::<usize>().ok()? - 1;
                         let max = rgraph.as_ref()?.num_vertices();
-                        if w >= max || v >= max { return None; }
+                        if w >= max || v >= max {
+                            return None;
+                        }
                         if w != v {
-                           rgraph.as_mut()?.add_edge(w, v);
+                            rgraph.as_mut()?.add_edge(w, v);
                         }
                     }
-                    _ => { return None },
+                    _ => return None,
                 }
                 Some(())
-            })().ok_or(format!("invalid line {}: {}", i+1, line))?;
+            })()
+            .ok_or(format!("invalid line {}: {}", i + 1, line))?;
         }
         Ok(graph.ok_or("no graph defined in file")?)
     }
@@ -91,13 +102,15 @@ impl ColorableGraph for &CsrGraph {
     }
 
     fn neighbors(&self, vi: usize) -> &[usize] {
-        &self.edges[if vi == 0 { 0 } else { self.vertices[vi-1] } .. self.vertices[vi]]
+        &self.edges[if vi == 0 { 0 } else { self.vertices[vi - 1] }..self.vertices[vi]]
     }
 }
 
 impl<T> From<T> for CsrGraph
-where T : ColorableGraph {
-    fn from(graph : T) -> Self {
+where
+    T: ColorableGraph,
+{
+    fn from(graph: T) -> Self {
         let mut vertices = Vec::with_capacity(graph.num_vertices());
         let mut edges = vec![];
         let mut offset = 0;
@@ -107,10 +120,7 @@ where T : ColorableGraph {
             offset += neighbors.len();
             vertices.push(offset);
         }
-        CsrGraph {
-            vertices,
-            edges,
-        }
+        CsrGraph { vertices, edges }
     }
 }
 
