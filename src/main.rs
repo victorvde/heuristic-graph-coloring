@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     paths.sort();
 
-    println!("colors\tmicroseconds\tname\tpath");
+    println!("colors\tmicros\tname\tpath");
     for path in paths {
         let graph = &match VecVecGraph::from_dimacs_file(&path) {
             Ok(x) => x,
@@ -40,8 +40,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 3 => ("color_greedy_by_degree csr", color_greedy_by_degree(csr)),
                 4 => ("color_greedy_dsatur", color_greedy_dsatur(graph)),
                 5 => ("color_greedy_dsatur csr", color_greedy_dsatur(csr)),
-                6 => ("color_greedy_rlf", color_greedy_rlf(graph)),
-                7 => ("color_greedy_rlf csr", color_greedy_rlf(csr)),
+                6 => ("color_rlf", color_rlf(graph)),
+                7 => ("color_rlf csr", color_rlf(csr)),
                 _ => unreachable!(),
             };
             let elapsed = now.elapsed();

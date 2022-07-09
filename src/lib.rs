@@ -1,21 +1,30 @@
+#![warn(missing_docs)]
+#![doc = include_str!("../README.md")]
+
+/// Trait for graphs that the algorithms in this crate can work with.
 pub trait ColorableGraph {
+    /// Total number of vertices in the graph.
     fn num_vertices(&self) -> usize;
+    /// All neighbors of vertex `vi`
     fn neighbors(&self, vi: usize) -> &[usize];
 
+    /// Degree of vertex `vi`.
+    fn degree(&self, vi: usize) -> usize {
+        self.neighbors(vi).len()
+    }
+
+    /// Maximum degree of the graph.
     fn max_degree(&self) -> usize {
         (0..self.num_vertices())
             .map(|i| self.degree(i))
             .max()
             .unwrap_or(0)
     }
-
-    fn degree(&self, i: usize) -> usize {
-        self.neighbors(i).len()
-    }
 }
 
+/// Graph represented as multiple `Vec`s, one for each vertex.
 pub struct VecVecGraph {
-    pub edges: Vec<Vec<usize>>,
+    edges: Vec<Vec<usize>>,
 }
 
 impl ColorableGraph for &VecVecGraph {
@@ -29,17 +38,24 @@ impl ColorableGraph for &VecVecGraph {
 }
 
 impl VecVecGraph {
+    /// Create graph with `num_vertices` vertices and no edges.
     pub fn new(num_vertices: usize) -> Self {
         VecVecGraph {
             edges: (0..num_vertices).map(|_| vec![]).collect(),
         }
     }
 
+    /// Add an edge between `w` and `v`.
+    ///
+    /// Note: avoid adding edges multiple times or adding an edge of a vertex to itself (a loop) as this confuses the algorithms.
     pub fn add_edge(&mut self, w: usize, v: usize) {
         self.edges[w].push(v);
         self.edges[v].push(w);
     }
 
+    /// Load a graph from a DIMACS formatted text file (`*.col`).
+    ///
+    /// Note that DIMACS files start vertex indices at 1 while this library starts vertex indices at 0.
     pub fn from_dimacs_file(
         path: &dyn AsRef<std::path::Path>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
@@ -91,9 +107,12 @@ impl VecVecGraph {
     }
 }
 
+/// A graph in compressed format with all edges in one array.
+///
+/// Very slightly faster than [VecVecGraph] (excluding the creation time).
 pub struct CsrGraph {
-    pub vertices: Vec<usize>,
-    pub edges: Vec<usize>,
+    vertices: Vec<usize>,
+    edges: Vec<usize>,
 }
 
 impl ColorableGraph for &CsrGraph {
@@ -152,11 +171,18 @@ fn color_greedy_by_order(
     coloring
 }
 
+/// The most simple greedy algorigthm. Colors vertices in index order by first possible color.
+///
+/// Use as baseline only, [color_greedy_by_degree] generally uses less colors in the same time.
 pub fn color_greedy_naive(graph: impl ColorableGraph) -> Vec<usize> {
     let range = 0..graph.num_vertices();
     color_greedy_by_order(graph, range)
 }
 
+/// Colors vertices from highest degree to lowest by first possible color.
+///
+/// Generally uses less colors than [color_greedy_naive] in about the same time.
+/// Generally uses more colors than [color_greedy_dsatur] and [color_rlf], but in less time.
 pub fn color_greedy_by_degree(graph: impl ColorableGraph) -> Vec<usize> {
     let mut vertices: Vec<_> = (0..graph.num_vertices()).collect();
     vertices.sort_by_key(|&i| std::cmp::Reverse(graph.neighbors(i).len()));
@@ -170,6 +196,10 @@ struct DSatur {
     index: std::cmp::Reverse<usize>,
 }
 
+/// Colors vertices from most colors of neighbors to least (dynamically) by first possible color. Known as DSATUR.
+///
+/// Generally uses less colors than [color_greedy_by_degree], but in more time.
+/// Generally uses more colors than [color_rlf], but in less time.
 pub fn color_greedy_dsatur(graph: impl ColorableGraph) -> Vec<usize> {
     let mut coloring = vec![usize::MAX; graph.num_vertices()];
     let mut neighbor_coloring: Vec<Vec<bool>> = vec![];
@@ -240,7 +270,10 @@ struct Rlf {
     index: std::cmp::Reverse<usize>,
 }
 
-pub fn color_greedy_rlf(graph: impl ColorableGraph) -> Vec<usize> {
+/// Colors vertices one color at a time by foming maximal independent sets. Known as Recursive Largest First.
+///
+/// Generally uses less colors than [color_greedy_by_degree] and [color_greedy_dsatur], but in more time.
+pub fn color_rlf(graph: impl ColorableGraph) -> Vec<usize> {
     let mut coloring = vec![usize::MAX; graph.num_vertices()];
     let mut degree_next: Vec<usize> = vec![0; graph.num_vertices()];
     let mut degree_other: Vec<usize> = vec![0; graph.num_vertices()];
@@ -306,6 +339,7 @@ pub fn color_greedy_rlf(graph: impl ColorableGraph) -> Vec<usize> {
     coloring
 }
 
+/// Counts the amount of colors in `coloring` by getting the maximum color plus one.
 pub fn count_colors(coloring: &[usize]) -> usize {
     match coloring.iter().max() {
         None => 0,
@@ -313,6 +347,7 @@ pub fn count_colors(coloring: &[usize]) -> usize {
     }
 }
 
+/// Checks that the coloring is correct, else panics.
 pub fn validate_coloring(graph: impl ColorableGraph, coloring: &[usize]) {
     for i in 0..graph.num_vertices() {
         let c = coloring[i];
