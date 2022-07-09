@@ -29,14 +29,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 continue;
             }
         };
-        for i in 0..4 {
+        let csr = CsrGraph::from(&graph);
+        for i in 0..8 {
             use std::time::Instant;
             let now = Instant::now();
             let (name, coloring) = match i {
                 0 => ("color_greedy_naive", color_greedy_naive(&graph)),
-                1 => ("color_greedy_by_degree", color_greedy_by_degree(&graph)),
-                2 => ("color_greedy_dsatur", color_greedy_dsatur(&graph)),
-                3 => ("color_greedy_rlf", color_greedy_rlf(&graph)),
+                1 => ("color_greedy_naive csr", color_greedy_naive(&csr)),
+                2 => ("color_greedy_by_degree", color_greedy_by_degree(&graph)),
+                3 => ("color_greedy_by_degree csr", color_greedy_by_degree(&csr)),
+                4 => ("color_greedy_dsatur", color_greedy_dsatur(&graph)),
+                5 => ("color_greedy_dsatur csr", color_greedy_dsatur(&csr)),
+                6 => ("color_greedy_rlf", color_greedy_rlf(&graph)),
+                7 => ("color_greedy_rlf csr", color_greedy_rlf(&csr)),
                 _ => unreachable!(),
             };
             let elapsed = now.elapsed();

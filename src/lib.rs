@@ -80,6 +80,40 @@ impl VecVecGraph {
     }
 }
 
+pub struct CsrGraph {
+    pub vertices: Vec<usize>,
+    pub edges: Vec<usize>,
+}
+
+impl ColorableGraph for &CsrGraph {
+    fn num_vertices(&self) -> usize {
+        self.vertices.len()
+    }
+
+    fn neighbors(&self, vi: usize) -> &[usize] {
+        &self.edges[if vi == 0 { 0 } else { self.vertices[vi-1] } .. self.vertices[vi]]
+    }
+}
+
+impl<T> From<T> for CsrGraph
+where T : ColorableGraph {
+    fn from(graph : T) -> Self {
+        let mut vertices = Vec::with_capacity(graph.num_vertices());
+        let mut edges = vec![];
+        let mut offset = 0;
+        for i in 0..graph.num_vertices() {
+            let neighbors = graph.neighbors(i);
+            edges.extend(neighbors);
+            offset += neighbors.len();
+            vertices.push(offset);
+        }
+        CsrGraph {
+            vertices,
+            edges,
+        }
+    }
+}
+
 fn color_greedy_by_order(
     graph: impl ColorableGraph,
     order: impl Iterator<Item = usize>,
