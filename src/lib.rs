@@ -62,10 +62,10 @@ impl VecVecGraph {
                         }
                         let num_vertices = it.next()?.parse::<usize>().ok()?;
                         let _num_edges = it.next()?.parse::<usize>().ok()?;
-                        if !it.next().is_none() {
+                        if it.next().is_some() {
                             return None;
                         }
-                        if !rgraph.is_none() {
+                        if rgraph.is_some() {
                             return None;
                         }
                         *rgraph = Some(Self::new(num_vertices));
