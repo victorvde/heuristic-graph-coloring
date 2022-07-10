@@ -72,6 +72,7 @@ impl VecVecGraph {
                 match it.next() {
                     Some("c" | "n" | "x" | "d" | "v") | None => {}
                     Some("p") => {
+                        // problem statement with number of ertices
                         let format = it.next()?;
                         if format != "edge" {
                             return None;
@@ -87,6 +88,7 @@ impl VecVecGraph {
                         *rgraph = Some(Self::new(num_vertices));
                     }
                     Some("e") => {
+                        // edge
                         let w = it.next()?.parse::<usize>().ok()? - 1;
                         let v = it.next()?.parse::<usize>().ok()? - 1;
                         let max = rgraph.as_ref()?.num_vertices();
@@ -202,9 +204,12 @@ struct DSatur {
 /// Generally uses more colors than [color_rlf], but in less time.
 pub fn color_greedy_dsatur(graph: impl ColorableGraph) -> Vec<usize> {
     let mut coloring = vec![usize::MAX; graph.num_vertices()];
+
+    // to control the time complexity we don't go thorough all the neighbours of neighbours every time we color
     let mut neighbor_coloring: Vec<Vec<bool>> = vec![];
     neighbor_coloring.resize_with(graph.num_vertices(), Vec::new);
 
+    // initialize priority queue / heap
     let mut dsaturs = vec![];
     for i in 0..graph.num_vertices() {
         dsaturs.push(DSatur {
@@ -213,10 +218,10 @@ pub fn color_greedy_dsatur(graph: impl ColorableGraph) -> Vec<usize> {
             index: std::cmp::Reverse(i),
         });
     }
-
     let mut heap = std::collections::BTreeSet::from_iter(dsaturs.iter().cloned());
 
     loop {
+        // get most saturated vertex
         // TODO: use pop_last when stabilized
         let dsatur = match heap.iter().last() {
             None => break,
@@ -226,6 +231,7 @@ pub fn color_greedy_dsatur(graph: impl ColorableGraph) -> Vec<usize> {
         let removed = heap.remove(&dsatur);
         assert!(removed);
 
+        // color it
         let ncs = &neighbor_coloring[i];
         let mut c = usize::MAX;
         for ci in 0.. {
@@ -237,7 +243,9 @@ pub fn color_greedy_dsatur(graph: impl ColorableGraph) -> Vec<usize> {
         assert!(coloring[i] == usize::MAX);
         coloring[i] = c;
 
+        // update the counts of all neighbors
         for &n in graph.neighbors(i) {
+            // get neighbor
             if coloring[n] != usize::MAX {
                 continue;
             }
@@ -245,6 +253,7 @@ pub fn color_greedy_dsatur(graph: impl ColorableGraph) -> Vec<usize> {
             let removed = heap.remove(dsatur);
             assert!(removed);
 
+            // remove color from neighbor and change counts
             let ncs = &mut neighbor_coloring[n];
             if c >= ncs.len() {
                 ncs.resize(c + 1, false);
@@ -282,6 +291,7 @@ pub fn color_rlf(graph: impl ColorableGraph) -> Vec<usize> {
     let mut nextcolor = usize::MAX - 1;
 
     for c in 0.. {
+        // reinitialize degrees
         for i in 0..graph.num_vertices() {
             if coloring[i] != nocolor {
                 continue;
@@ -295,6 +305,7 @@ pub fn color_rlf(graph: impl ColorableGraph) -> Vec<usize> {
                 .count();
         }
 
+        // get first vertex with maximum degree
         let mut current_vertex = (0..graph.num_vertices())
             .filter(|&i| coloring[i] == nocolor)
             .max_by_key(|&i| (degree_other[i], std::cmp::Reverse(i)));
@@ -306,12 +317,14 @@ pub fn color_rlf(graph: impl ColorableGraph) -> Vec<usize> {
             debug_assert!(coloring[i] == nocolor);
             coloring[i] = c;
 
+            // color direct neighbours
             for &n in graph.neighbors(i) {
                 if coloring[n] != nocolor {
                     continue;
                 }
                 coloring[n] = nextcolor;
 
+                // change degrees for indirect neighbors
                 for &n2 in graph.neighbors(n) {
                     if coloring[n2] != nocolor {
                         continue;
@@ -322,6 +335,7 @@ pub fn color_rlf(graph: impl ColorableGraph) -> Vec<usize> {
                 }
             }
 
+            // next vertex is the one with the most shared neighbors
             // TODO: use pop_last when stabilized?
             current_vertex = (0..graph.num_vertices())
                 .filter(|&i| coloring[i] == nocolor)

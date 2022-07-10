@@ -2,6 +2,7 @@ use heuristic_graph_coloring::*;
 use poloto::prelude::*;
 use std::io::Write;
 
+// go through all instances, record the amount of colors and time, and output svg graphs and tsv data to the output folder
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // get instances paths
     let mut paths = vec![];
