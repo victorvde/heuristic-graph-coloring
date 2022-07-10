@@ -4,6 +4,8 @@ This crate provides algorithms for solving the [graph vertex coloring problem](h
 These algorithms return a "coloring", i.e. an assignment of each vertex to a "color" (index) such that no two vertices of the same color are connected by an edge.
 The algorithms use heuristics to minimize the number of different colors used.
 
+Current status: basic functionality is working, but not very optimized and not extensively tested.
+
 Example:
 ```
 use heuristic_graph_coloring::*;
@@ -25,6 +27,10 @@ Name | Function | Colors used | Time used | Comment
 [Greedy (by degree)](https://en.wikipedia.org/wiki/Greedy_coloring) | [color_greedy_by_degree] | A bit less | Least | Fast decent results.
 [DSatur](https://en.wikipedia.org/wiki/DSatur) | [color_greedy_dsatur] | Less | More | Good results but quite slow.
 [Recursive largest first](https://en.wikipedia.org/wiki/Recursive_largest_first_algorithm) | [color_rlf] | Even less | Even more | Slowest and worst time complexity, but best results.
+
+If you really want the least number of colors there is are slower algorightms like backtracking, SAT-solvers or HEA evolutionary approaches. The above algorithms are still useful to determine an upper bound in advance.
+
+On the other hand, if you want to go faster then there exist parallel and distributed graph coloring algorithms.
 
 # Tests
 
