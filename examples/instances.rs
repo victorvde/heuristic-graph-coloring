@@ -1,9 +1,10 @@
 use heuristic_graph_coloring::*;
 use poloto::prelude::*;
+use std::io::Write;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // get instances paths
     let mut paths = vec![];
-
     for entry in std::fs::read_dir("instances")? {
         let entry = entry?;
         let path = entry.path();
@@ -18,16 +19,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         paths.push(path);
     }
-
     paths.sort();
 
-    println!("colors\tmicros\tname\tpath");
-    let names = [
-        "naive",
-        "by_degree",
-        "dsatur",
-        "rlf",
-    ];
+    // run coloring and validation
+    let mut out = std::fs::File::create("output/instances.tsv")?;
+    writeln!(out, "colors\tmicros\tname\tpath")?;
+    let names = ["naive", "by_degree", "dsatur", "rlf"];
     let mut results = std::collections::HashMap::new();
     for path in paths {
         results.insert(path.clone(), std::collections::HashMap::new());
@@ -38,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 continue;
             }
         };
-        let graph = &CsrGraph::from(graph);
+        // let graph = &CsrGraph::from(graph);
         for i in 0..4 {
             use std::time::Instant;
             let now = Instant::now();
@@ -53,43 +50,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let elapsed = now.elapsed();
             validate_coloring(graph, &coloring);
             let count = count_colors(&coloring);
-            println!(
+            writeln!(
+                out,
                 "{}\t{}\t{}\t{}",
                 count,
                 elapsed.as_micros(),
                 name,
                 path.file_name().unwrap().to_str().unwrap(),
+            )?;
+            results.get_mut(&path).unwrap().insert(
+                name,
+                vec![count as f64, elapsed.as_nanos() as f64 / 1000000000.],
             );
-            results
-                .get_mut(&path)
-                .unwrap()
-                .insert(name, vec![count as  f64, elapsed.as_nanos() as f64 / 1000000000.]);
         }
     }
+
+    // plotting
     let titles = ["colors vs naive", "time vs naive"];
-    let files = ["colors.svg", "time.svg"];
-    let x_axis = ["naive colors", "naive (s)"];
+    let files = ["output/colors.svg", "output/time.svg"];
+    let x_axis = ["naive colors", "naive colors"];
     let y_axis = ["colors", "time (s)"];
     for i in 0..2 {
+        let plot = |n| {
+            let mut data: Vec<_> = results.values().map(|v| (v["naive"][0], v[n][i])).collect();
+            data.sort_by(|a, b| a.0.total_cmp(&b.0));
+            data.iter().buffered_plot().line(n)
+        };
         let plotter = poloto::quick_fmt!(
             titles[i],
             x_axis[i],
             y_axis[i],
-            poloto::build::plots_dyn(
-                names[1..]
-                    .iter()
-                    .map(|n| {
-                        let mut data : Vec<_> = results
-                            .values()
-                            .map(|v| (v["naive"][i], v[n][i])).collect();
-                        data.sort_by(|a, b| a.0.total_cmp(&b.0));
-                        data.iter().buffered_plot().scatter(n)
-                    })
-                    .collect()
-            )
+            poloto::build::plots_dyn(names.iter().map(plot).collect())
         );
         let k = format!("{}", poloto::disp(|w| plotter.simple_theme(w)));
         std::fs::write(files[i], k.as_bytes())?;
     }
+
     Ok(())
 }
