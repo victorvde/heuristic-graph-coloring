@@ -377,3 +377,45 @@ pub fn validate_coloring(graph: impl ColorableGraph, coloring: &[usize]) {
         }
     }
 }
+
+/// Adjust coloring to try tp make each color used a similar amount
+pub fn make_coloring_more_equitable(graph: impl ColorableGraph, coloring: &mut [usize]) {
+    let ncolors = count_colors(coloring);
+
+    // get initial amounts
+    let mut amounts = vec![];
+    for i in 0..graph.num_vertices() {
+        let color = coloring[i];
+        if color >= amounts.len() {
+            amounts.resize(color + 1, 0);
+        }
+        amounts[color] += 1;
+    }
+
+    // loop until equilibrium
+    loop {
+        let mut changed = false;
+
+        for i in 0..graph.num_vertices() {
+            let ci = coloring[i];
+            // find available color with the least amount
+            let smallest_c = match (0..ncolors)
+                .filter(|&c| graph.neighbors(i).iter().all(|&j| coloring[j] != c))
+                .min_by_key(|&c| amounts[c])
+            {
+                None => continue,
+                Some(x) => x,
+            };
+            // change color if it would help
+            if amounts[smallest_c] < amounts[ci] - 1 {
+                coloring[i] = smallest_c;
+                amounts[ci] -= 1;
+                amounts[smallest_c] += 1;
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+}

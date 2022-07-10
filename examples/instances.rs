@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             use std::time::Instant;
             let now = Instant::now();
             let name = names[i];
-            let coloring = match i {
+            let mut coloring = match i {
                 0 => color_greedy_naive(graph),
                 1 => color_greedy_by_degree(graph),
                 2 => color_greedy_dsatur(graph),
@@ -63,6 +63,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 name,
                 vec![count as f64, elapsed.as_nanos() as f64 / 1000000000.],
             );
+            make_coloring_more_equitable(graph, &mut coloring);
+            validate_coloring(graph, &coloring);
         }
     }
 
