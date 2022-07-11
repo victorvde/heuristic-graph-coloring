@@ -381,11 +381,9 @@ pub fn validate_coloring(graph: impl ColorableGraph, coloring: &[usize]) {
 }
 
 /// Adjust coloring to try tp make each color used a similar amount
-pub fn make_coloring_more_equitable(graph: impl ColorableGraph, coloring: &mut [usize]) {
-    let ncolors = count_colors(coloring);
-
+pub fn make_coloring_more_equitable(graph: impl ColorableGraph, coloring: &mut [usize], count_colors: usize) {
     // get initial amounts
-    let mut amounts = vec![0; ncolors];
+    let mut amounts = vec![0; count_colors];
     for &color in coloring.iter() {
         amounts[color] += 1;
     }
@@ -397,7 +395,7 @@ pub fn make_coloring_more_equitable(graph: impl ColorableGraph, coloring: &mut [
         for i in 0..graph.num_vertices() {
             let ci = coloring[i];
             // find available color with the least amount
-            let smallest_c = match (0..ncolors)
+            let smallest_c = match (0..count_colors)
                 .filter(|&c| graph.neighbors(i).iter().all(|&j| coloring[j] != c))
                 .min_by_key(|&c| amounts[c])
             {

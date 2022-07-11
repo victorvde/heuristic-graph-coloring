@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 name,
                 vec![count as f64, elapsed.as_nanos() as f64 / 1000000000.],
             );
-            make_coloring_more_equitable(graph, &mut coloring);
+            make_coloring_more_equitable(graph, &mut coloring, count);
             validate_coloring(graph, &coloring);
         }
     }
