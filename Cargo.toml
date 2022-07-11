@@ -1,6 +1,7 @@
 [package]
 name = "heuristic-graph-coloring"
 description = "Heuristic algorithms for graph vertex coloring"
+repository = "https://github.com/victorvde/heuristic-graph-coloring"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"

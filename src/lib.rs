@@ -23,6 +23,7 @@ pub trait ColorableGraph {
 }
 
 /// Graph represented as multiple `Vec`s, one for each vertex.
+#[derive(Debug, Clone)]
 pub struct VecVecGraph {
     edges: Vec<Vec<usize>>,
 }
@@ -112,6 +113,7 @@ impl VecVecGraph {
 /// A graph in compressed format with all edges in one array.
 ///
 /// Very slightly faster than [VecVecGraph] (excluding the creation time).
+#[derive(Debug, Clone)]
 pub struct CsrGraph {
     vertices: Vec<usize>,
     edges: Vec<usize>,
@@ -383,12 +385,8 @@ pub fn make_coloring_more_equitable(graph: impl ColorableGraph, coloring: &mut [
     let ncolors = count_colors(coloring);
 
     // get initial amounts
-    let mut amounts = vec![];
-    for i in 0..graph.num_vertices() {
-        let color = coloring[i];
-        if color >= amounts.len() {
-            amounts.resize(color + 1, 0);
-        }
+    let mut amounts = vec![0; ncolors];
+    for &color in coloring.iter() {
         amounts[color] += 1;
     }
 
