@@ -380,7 +380,7 @@ pub fn validate_coloring(graph: impl ColorableGraph, coloring: &[usize]) {
     }
 }
 
-/// Adjust coloring to try tp make each color used a similar amount
+/// Adjust coloring to try to make each color used a similar amount
 pub fn make_coloring_more_equitable(graph: impl ColorableGraph, coloring: &mut [usize], count_colors: usize) {
     // get initial amounts
     let mut amounts = vec![0; count_colors];

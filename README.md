@@ -6,17 +6,17 @@ The algorithms use heuristics to minimize the number of different colors used.
 
 Current status: basic functionality is working, but not very optimized and not extensively tested.
 
-Example:
+Example of creating a graph with 4 vertices, adding 4 edges and coloring it.
 ```
 use heuristic_graph_coloring::*;
 
-let mut graph = VecVecGraph::new(4); // Create a new graph with 4 vertices
+let mut graph = VecVecGraph::new(4);
 graph.add_edge(0, 1);
 graph.add_edge(1, 2);
 graph.add_edge(0, 2);
-graph.add_edge(0, 3);
+graph.add_edge(2, 3);
 let coloring = color_greedy_by_degree(&graph);
-println!("{:?}", coloring); // [0, 1, 2, 1]
+assert_eq!(coloring, [1, 2, 0, 1]);
 ```
 
 # Algorithms
